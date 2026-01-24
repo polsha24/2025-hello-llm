@@ -18,8 +18,7 @@ def main() -> None:
     """
     with SETTINGS_PATH.open("r", encoding="utf-8") as f:
         settings = json.load(f, object_hook=lambda d: SimpleNamespace(**d))
-        
-    importer = RawDataImporter('papluca/language-identification')
+    importer = RawDataImporter(settings.parameters.dataset)
     importer.obtain()
 
     preprocessor = RawDataPreprocessor(importer.raw_data)
