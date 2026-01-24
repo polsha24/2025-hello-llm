@@ -2,18 +2,23 @@
 Starter for demonstration of laboratory work.
 """
 
-# pylint: disable=too-many-locals, undefined-variable, unused-import
-from unittest import result
-from core_utils.llm.time_decorator import report_time
-from lab_7_llm.main import RawDataImporter
-from lab_7_llm.main import RawDataPreprocessor
+import json
+from pathlib import Path
+from types import SimpleNamespace
 
+# pylint: disable=too-many-locals, undefined-variable, unused-import
+from lab_7_llm.main import RawDataImporter, RawDataPreprocessor, report_time
+
+SETTINGS_PATH = Path(__file__).resolve().with_name("settings.json")
 
 @report_time
 def main() -> None:
     """
     Run the translation pipeline.
     """
+    with SETTINGS_PATH.open("r", encoding="utf-8") as f:
+        settings = json.load(f, object_hook=lambda d: SimpleNamespace(**d))
+        
     importer = RawDataImporter('papluca/language-identification')
     importer.obtain()
 
