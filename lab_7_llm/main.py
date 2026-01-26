@@ -70,3 +70,10 @@ class RawDataPreprocessor(AbstractRawDataPreprocessor):
             "dataset_sample_min_len": min_len,
             "dataset_sample_max_len": max_len,
         }
+
+
+    @report_time
+    def transform(self) -> None:
+        """
+        Apply preprocessing transformations to the raw dataset.
+        """
