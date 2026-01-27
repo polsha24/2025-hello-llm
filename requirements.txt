@@ -1,4 +1,5 @@
-pandas>=2.0
 datasets>=2.14
+pandas>=2.0
 torch==2.9.1
 torchinfo
+transformers==4.50.3
