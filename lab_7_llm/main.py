@@ -50,15 +50,9 @@ class RawDataImporter(AbstractRawDataImporter):
         Raises:
             TypeError: In case of downloaded dataset is not pd.DataFrame
         """
-        df = load_dataset(self._hf_name, split="validation")
-
-        if not hasattr(df, "to_pandas"):
+        self._raw_data = load_dataset(self._hf_name, split="validation").to_pandas()
+        if not isinstance(self._raw_data, pd.DataFrame):
             raise TypeError("Downloaded dataset is not a pandas DataFrame")
-        df = df.to_pandas()
-
-        if not isinstance(df, pd.DataFrame):
-            raise TypeError("Downloaded dataset is not a pandas DataFrame")
-        self._raw_data = df
 
 
 class RawDataPreprocessor(AbstractRawDataPreprocessor):
@@ -73,27 +67,16 @@ class RawDataPreprocessor(AbstractRawDataPreprocessor):
         Returns:
             dict: Dataset key properties
         """
-        df = self._raw_data.copy()
-
-        num_samples = len(df)
-        num_columns = len(df.columns)
-        num_duplicates = df.duplicated().sum()
-        num_empty_rows = df.isnull().all(axis=1).sum()
-
-        text_col = 'text'
-        df_non_empty = df.dropna(subset=[text_col])
-
-        lengths = df_non_empty[text_col].str.len()
-        min_len = int(lengths.min())
-        max_len = int(lengths.max())
+        df_non_empty = self._raw_data["text"].dropna()
+        lengths = df_non_empty.str.len()
 
         return {
-            "dataset_number_of_samples": int(num_samples),
-            "dataset_columns": int(num_columns),
-            "dataset_duplicates": int(num_duplicates),
-            "dataset_empty_rows": int(num_empty_rows),
-            "dataset_sample_min_len": min_len,
-            "dataset_sample_max_len": max_len,
+            "dataset_number_of_samples": len(self._raw_data),
+            "dataset_columns": len(self._raw_data.columns),
+            "dataset_duplicates": self._raw_data.duplicated().sum(),
+            "dataset_empty_rows": self._raw_data.isnull().all(axis=1).sum(),
+            "dataset_sample_min_len": lengths.min(),
+            "dataset_sample_max_len": lengths.max(),
         }
 
     @report_time
@@ -101,23 +84,19 @@ class RawDataPreprocessor(AbstractRawDataPreprocessor):
         """
         Apply preprocessing transformations to the raw dataset.
         """
-        df = self._raw_data.copy()
-
-        df = df.rename(
+        self._data = self._raw_data.rename(
             columns={
                 "text": ColumnNames.SOURCE,
                 "labels": ColumnNames.TARGET,
             }
         )
 
-        unique_labels = sorted(df[ColumnNames.TARGET].unique())
+        unique_labels = sorted(self._data[ColumnNames.TARGET].unique())
         label_mapping = {label: idx for idx, label in enumerate(unique_labels)}
 
-        df[ColumnNames.TARGET] = df[ColumnNames.TARGET].map(label_mapping)
+        self._data[ColumnNames.TARGET] = self._data[ColumnNames.TARGET].map(label_mapping)
 
-        df = df.reset_index(drop=True)
-
-        self._data = df
+        self._data = self._data.reset_index(drop=True)
 
 
 class TaskDataset(Dataset):
