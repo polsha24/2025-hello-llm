@@ -67,7 +67,8 @@ class RawDataPreprocessor(AbstractRawDataPreprocessor):
 
         Args:
             raw_data (pandas.DataFrame): Original dataset
-            model_name (str | None): Model name for label alignment; if set, targets are mapped to model's label indices
+            model_name (str | None): Model name for label alignment; if set,
+                targets are mapped to model's label indices
         """
         super().__init__(raw_data)
         self._model_name = model_name
@@ -154,8 +155,8 @@ class TaskDataset(Dataset):
         """
         row = self._data.iloc[index]
         return (
-            row[ColumnNames.SOURCE],
-            row[ColumnNames.TARGET],
+            row[ColumnNames.SOURCE.value],
+            row[ColumnNames.TARGET.value],
         )
 
     @property
@@ -206,6 +207,7 @@ class LLMPipeline(AbstractLLMPipeline):
         Returns:
             dict: Properties of a model
         """
+        assert self._model is not None
         config = self._model.config
         stats = summary(
             self._model,
@@ -289,6 +291,7 @@ class LLMPipeline(AbstractLLMPipeline):
             max_length=self._max_length,
         )
         encoded = {k: v.to(self._device) for k, v in encoded.items()}
+        assert self._model is not None
         outputs = self._model(**encoded)
         logits = outputs.logits
         predictions = torch.argmax(logits, dim=-1)
@@ -299,16 +302,6 @@ class TaskEvaluator(AbstractTaskEvaluator):
     """
     A class that compares prediction quality using the specified metric.
     """
-
-    def __init__(self, data_path: Path, metrics: Iterable[Metrics]) -> None:
-        """
-        Initialize an instance of Evaluator.
-
-        Args:
-            data_path (pathlib.Path): Path to predictions
-            metrics (Iterable[Metrics]): List of metrics to check
-        """
-        super().__init__(data_path, metrics)
 
     def run(self) -> dict[str, float]:
         """
