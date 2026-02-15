@@ -97,8 +97,8 @@ class RawDataPreprocessor(AbstractRawDataPreprocessor):
         """
         self._data = self._raw_data.rename(
             columns={
-                "text": ColumnNames.SOURCE,
-                "labels": ColumnNames.TARGET,
+                "text": ColumnNames.SOURCE.value,
+                "labels": ColumnNames.TARGET.value,
             }
         )
 
@@ -109,11 +109,11 @@ class RawDataPreprocessor(AbstractRawDataPreprocessor):
             else:
                 id2label = config.id2label
                 label2id = {str(v): int(k) for k, v in id2label.items()}
-            self._data[ColumnNames.TARGET] = self._data[ColumnNames.TARGET].map(label2id)
+            self._data[ColumnNames.TARGET.value] = self._data[ColumnNames.TARGET.value].map(label2id)
         else:
-            unique_labels = sorted(self._data[ColumnNames.TARGET].unique())
+            unique_labels = sorted(self._data[ColumnNames.TARGET.value].unique())
             label_mapping = {label: idx for idx, label in enumerate(unique_labels)}
-            self._data[ColumnNames.TARGET] = self._data[ColumnNames.TARGET].map(label_mapping)
+            self._data[ColumnNames.TARGET.value] = self._data[ColumnNames.TARGET.value].map(label_mapping)
 
         self._data = self._data.reset_index(drop=True)
 
