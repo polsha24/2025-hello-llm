@@ -9,10 +9,11 @@ from pathlib import Path
 # pylint: disable=too-few-public-methods, undefined-variable, too-many-arguments, super-init-not-called
 from typing import Iterable, Sequence
 
+import evaluate
 import pandas as pd
 from datasets import load_dataset
 from pandas import DataFrame
-from torch.utils.data import Dataset
+from torch.utils.data import DataLoader, Dataset
 
 from core_utils.llm.llm_pipeline import AbstractLLMPipeline
 from core_utils.llm.metrics import Metrics
@@ -22,7 +23,7 @@ from core_utils.llm.task_evaluator import AbstractTaskEvaluator
 from core_utils.llm.time_decorator import report_time
 
 try:
-    from transformers import AutoTokenizer, XLMRobertaForSequenceClassification
+    from transformers import AutoConfig, AutoTokenizer, XLMRobertaForSequenceClassification
 except ImportError:
     print('Library "transformers" not installed. Failed to import.')
 
@@ -60,6 +61,17 @@ class RawDataPreprocessor(AbstractRawDataPreprocessor):
     A class that analyzes and preprocesses a dataset.
     """
 
+    def __init__(self, raw_data: DataFrame, model_name: str | None = None) -> None:
+        """
+        Initialize an instance of RawDataPreprocessor.
+
+        Args:
+            raw_data (pandas.DataFrame): Original dataset
+            model_name (str | None): Model name for label alignment; if set, targets are mapped to model's label indices
+        """
+        super().__init__(raw_data)
+        self._model_name = model_name
+
     def analyze(self) -> dict:
         """
         Analyze a dataset.
@@ -91,10 +103,18 @@ class RawDataPreprocessor(AbstractRawDataPreprocessor):
             }
         )
 
-        unique_labels = sorted(self._data[ColumnNames.TARGET].unique())
-        label_mapping = {label: idx for idx, label in enumerate(unique_labels)}
-
-        self._data[ColumnNames.TARGET] = self._data[ColumnNames.TARGET].map(label_mapping)
+        if self._model_name is not None:
+            config = AutoConfig.from_pretrained(self._model_name)
+            if hasattr(config, "label2id") and config.label2id:
+                label2id = {str(k): int(v) for k, v in config.label2id.items()}
+            else:
+                id2label = config.id2label
+                label2id = {str(v): int(k) for k, v in id2label.items()}
+            self._data[ColumnNames.TARGET] = self._data[ColumnNames.TARGET].map(label2id)
+        else:
+            unique_labels = sorted(self._data[ColumnNames.TARGET].unique())
+            label_mapping = {label: idx for idx, label in enumerate(unique_labels)}
+            self._data[ColumnNames.TARGET] = self._data[ColumnNames.TARGET].map(label_mapping)
 
         self._data = self._data.reset_index(drop=True)
 
@@ -221,24 +241,8 @@ class LLMPipeline(AbstractLLMPipeline):
         """
         if self._model is None:
             return None
-
-        text = sample[0]
-
-        encoded = self._tokenizer(
-            text,
-            return_tensors="pt",
-            truncation=True,
-            padding=True,
-            max_length=self._max_length,
-        )
-
-        encoded = {k: v.to(self._device) for k, v in encoded.items()}
-
-        outputs = self._model(**encoded)
-        logits = outputs.logits
-
-        prediction = torch.argmax(logits, dim=-1).item()
-        return str(prediction)
+        predictions = self._infer_batch([sample])
+        return predictions[0] if predictions else None
 
     @report_time
     def infer_dataset(self) -> pd.DataFrame:
@@ -248,6 +252,22 @@ class LLMPipeline(AbstractLLMPipeline):
         Returns:
             pd.DataFrame: Data with predictions
         """
+        data_loader = DataLoader(
+            self._dataset,
+            batch_size=self._batch_size,
+        )
+        all_targets: list[int] = []
+        all_predictions: list[str] = []
+        for batch in data_loader:
+            sources, targets = batch
+            sample_batch = list(zip(sources, targets.tolist()))
+            batch_predictions = self._infer_batch(sample_batch)
+            all_targets.extend(targets.tolist())
+            all_predictions.extend(batch_predictions)
+        return pd.DataFrame({
+            ColumnNames.TARGET: all_targets,
+            ColumnNames.PREDICTION: all_predictions,
+        })
 
     @torch.no_grad()
     def _infer_batch(self, sample_batch: Sequence[tuple[str, ...]]) -> list[str]:
@@ -260,6 +280,19 @@ class LLMPipeline(AbstractLLMPipeline):
         Returns:
             list[str]: Model predictions as strings
         """
+        texts = [sample[0] for sample in sample_batch]
+        encoded = self._tokenizer(
+            texts,
+            return_tensors="pt",
+            truncation=True,
+            padding=True,
+            max_length=self._max_length,
+        )
+        encoded = {k: v.to(self._device) for k, v in encoded.items()}
+        outputs = self._model(**encoded)
+        logits = outputs.logits
+        predictions = torch.argmax(logits, dim=-1)
+        return [str(p.item()) for p in predictions]
 
 
 class TaskEvaluator(AbstractTaskEvaluator):
@@ -275,11 +308,28 @@ class TaskEvaluator(AbstractTaskEvaluator):
             data_path (pathlib.Path): Path to predictions
             metrics (Iterable[Metrics]): List of metrics to check
         """
+        super().__init__(data_path, metrics)
 
-    def run(self) -> dict:
+    def run(self) -> dict[str, float]:
         """
         Evaluate the predictions against the references using the specified metric.
 
         Returns:
-            dict: A dictionary containing information about the calculated metric
+            dict[str, float]: A dictionary containing information about the calculated metric
         """
+        data = pd.read_csv(self._data_path)
+        references = data[ColumnNames.TARGET.value].tolist()
+        predictions = data[ColumnNames.PREDICTION.value].astype(int).tolist()
+
+        result: dict[str, float] = {}
+        for metric in self._metrics:
+            metric_fn = evaluate.load(str(metric))
+            compute_kwargs: dict = {
+                "references": references,
+                "predictions": predictions,
+            }
+            if metric in (Metrics.F1, Metrics.PRECISION, Metrics.RECALL):
+                compute_kwargs["average"] = "macro"
+            computed = metric_fn.compute(**compute_kwargs)
+            result[str(metric)] = float(computed[str(metric)])
+        return result

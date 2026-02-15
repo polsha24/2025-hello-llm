@@ -17,8 +17,9 @@ from lab_7_llm.main import (
     LLMPipeline,
     RawDataImporter,
     RawDataPreprocessor,
-    report_time,
     TaskDataset,
+    TaskEvaluator,
+    report_time,
 )
 
 try:
@@ -52,7 +53,7 @@ def main() -> None:
     importer = RawDataImporter(settings.parameters.dataset)
     importer.obtain()
 
-    preprocessor = RawDataPreprocessor(importer.raw_data)
+    preprocessor = RawDataPreprocessor(importer.raw_data, model_name=settings.parameters.model)
     analysis = preprocessor.analyze()
     preprocessor.transform()
 
@@ -60,12 +61,12 @@ def main() -> None:
     for key, value in analysis.items():
         print(f"{key}: {value}")
 
-    dataset = TaskDataset(preprocessor.data.head(100))
+    dataset = TaskDataset(preprocessor.data)
 
     pipeline = LLMPipeline(
         model_name=settings.parameters.model,
         dataset=dataset,
-        batch_size=1,
+        batch_size=64,
         max_length=120,
         device="cpu",
     )
@@ -83,7 +84,19 @@ def main() -> None:
     print("Text:", sample[0])
     print("Prediction:", prediction)
 
-    result = prediction
+    predictions_df = pipeline.infer_dataset()
+    dist_path = Path(__file__).resolve().parent / "dist"
+    dist_path.mkdir(parents=True, exist_ok=True)
+    predictions_path = dist_path / "predictions.csv"
+    predictions_df.to_csv(predictions_path, index=False)
+
+    evaluator = TaskEvaluator(predictions_path, settings.parameters.metrics)
+    metrics_result = evaluator.run()
+    print("\nModel performance evaluation:")
+    for metric_name, score in metrics_result.items():
+        print(f"{metric_name}: {score}")
+
+    result = metrics_result
     assert result is not None, "Demo does not work correctly"
 
 
