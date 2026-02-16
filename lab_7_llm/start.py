@@ -36,7 +36,7 @@ def main() -> None:
     for name, val in analysis.items():
         print(f"{name}: {val}")
 
-    data = preprocessor.data
+    data = preprocessor.data.head(100)
     assert data is not None, "Preprocessed data is missing"
     dataset = TaskDataset(data)
 
