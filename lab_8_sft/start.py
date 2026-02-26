@@ -74,7 +74,7 @@ def main() -> None:
         print(f"{metric_name}: {score}")
 
     result = metrics_result
-    assert result is not None, "Demo does not work correctly"
+    assert result is not None, "Fine-tuning does not work correctly"
 
 
 if __name__ == "__main__":
