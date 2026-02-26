@@ -400,32 +400,12 @@ class TaskEvaluator(AbstractTaskEvaluator):
         result: dict[str, float] = {}
         for metric in self._metrics:
             metric_fn = evaluate.load(str(metric))
-
-            if metric is Metrics.BLEU:
-                references = [[str(ref)] for ref in target_series]
-                predictions = [str(pred) for pred in prediction_series]
-                computed = metric_fn.compute(
-                    references=references,
-                    predictions=predictions,
-                )
-            elif metric in (Metrics.F1, Metrics.PRECISION, Metrics.RECALL, Metrics.ACCURACY):
-                references = [int(ref) for ref in target_series]
-                predictions = [int(pred) for pred in prediction_series]
-                compute_kwargs: dict = {
-                    "references": references,
-                    "predictions": predictions,
-                }
-                if metric in (Metrics.F1, Metrics.PRECISION, Metrics.RECALL):
-                    compute_kwargs["average"] = "macro"
-                computed = metric_fn.compute(**compute_kwargs)
-            else:
-                references = [str(ref) for ref in target_series]
-                predictions = [str(pred) for pred in prediction_series]
-                computed = metric_fn.compute(
-                    references=references,
-                    predictions=predictions,
-                )
-
+            references = [[str(ref)] for ref in target_series]
+            predictions = [str(pred) for pred in prediction_series]
+            computed = metric_fn.compute(
+                references=references,
+                predictions=predictions,
+            )
             result[str(metric)] = float(computed[str(metric)])
         return result
 
