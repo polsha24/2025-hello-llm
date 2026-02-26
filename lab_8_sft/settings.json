@@ -2,7 +2,7 @@
   "parameters": {
     "model": "Helsinki-NLP/opus-mt-ru-es",
     "dataset": "nuvocare/Ted2020_en_es_fr_de_it_ca_pl_ru_nl",
-    "metrics": []
+    "metrics": ["bleu"]
   },
   "target_score": 6
 }
