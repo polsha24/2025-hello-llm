@@ -6,7 +6,7 @@ Fine-tuning Large Language Models for a downstream task.
 
 # pylint: disable=too-few-public-methods, undefined-variable, duplicate-code, unused-argument, too-many-arguments
 from pathlib import Path
-from typing import Callable, cast, Iterable, Sequence
+from typing import Callable, Iterable, Sequence
 
 import evaluate
 import pandas as pd
@@ -67,15 +67,9 @@ class RawDataPreprocessor(AbstractRawDataPreprocessor):
         if "text" in self._raw_data.columns:
             series = self._raw_data["text"].dropna().astype(str)
         elif "translation" in self._raw_data.columns:
-            def get_source(translation: object) -> str | None:
-                if isinstance(translation, dict):
-                    if "ru" in translation:
-                        return cast(str, translation["ru"])
-                    if translation:
-                        return cast(str, next(iter(translation.values())))
-                return None
-
-            series = self._raw_data["translation"].map(get_source).dropna().astype(str)
+            series = self._raw_data["translation"].map(
+                lambda t: t.get("ru") if isinstance(t, dict) else None
+            ).dropna().astype(str)
         elif {"ru", "es"}.issubset(self._raw_data.columns):
             series = self._raw_data["ru"].dropna().astype(str)
         else:
@@ -98,22 +92,15 @@ class RawDataPreprocessor(AbstractRawDataPreprocessor):
         Apply preprocessing transformations to the raw dataset.
         """
         if "translation" in self._raw_data.columns:
-
-            def get_source(translation: object) -> str | None:
-                if isinstance(translation, dict) and "ru" in translation:
-                    return cast(str, translation["ru"])
-                return None
-
-            def get_target(translation: object) -> str | None:
-                if isinstance(translation, dict) and "es" in translation:
-                    return cast(str, translation["es"])
-                return None
-
-            translations = self._raw_data["translation"]
+            col = self._raw_data["translation"]
             data = pd.DataFrame(
                 {
-                    ColumnNames.SOURCE.value: translations.map(get_source),
-                    ColumnNames.TARGET.value: translations.map(get_target),
+                    ColumnNames.SOURCE.value: col.map(
+                        lambda t: t.get("ru") if isinstance(t, dict) else None
+                    ),
+                    ColumnNames.TARGET.value: col.map(
+                        lambda t: t.get("es") if isinstance(t, dict) else None
+                    ),
                 }
             )
         elif {"ru", "es"}.issubset(self._raw_data.columns):
@@ -271,11 +258,11 @@ class LLMPipeline(AbstractLLMPipeline):
             dict: Properties of a model
         """
         assert self._model is not None
+        assert isinstance(self._model, torch.nn.Module)
         config = self._model.config
 
-        module = cast(torch.nn.Module, self._model)
-        trainable_params = sum(p.numel() for p in module.parameters() if p.requires_grad)
-        total_params = sum(p.numel() for p in module.parameters())
+        trainable_params = sum(p.numel() for p in self._model.parameters() if p.requires_grad)
+        total_params = sum(p.numel() for p in self._model.parameters())
 
         max_context_length = int(
             getattr(
@@ -408,32 +395,3 @@ class TaskEvaluator(AbstractTaskEvaluator):
             )
             result[str(metric)] = float(computed[str(metric)])
         return result
-
-
-# class SFTPipeline(AbstractSFTPipeline):
-#     """
-#     A class that initializes a model, fine-tuning.
-#     """
-
-#     def __init__(
-#         self,
-#         model_name: str,
-#         dataset: Dataset,
-#         sft_params: SFTParams,
-#         data_collator: Callable[[AutoTokenizer], torch.Tensor] | None = None,
-#     ) -> None:
-#         """
-#         Initialize an instance of ClassificationSFTPipeline.
-
-#         Args:
-#             model_name (str): The name of the pre-trained model.
-#             dataset (torch.utils.data.dataset.Dataset): The dataset used.
-#             sft_params (SFTParams): Fine-Tuning parameters.
-#             data_collator (Callable[[AutoTokenizer], torch.Tensor] | None, optional): processing
-#                                                                     batch. Defaults to None.
-#         """
-
-#     def run(self) -> None:
-#         """
-#         Fine-tune model.
-#         """
