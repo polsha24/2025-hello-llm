@@ -47,7 +47,7 @@ class RawDataImporter(AbstractRawDataImporter):
         """
         Import dataset.
         """
-        self._raw_data = load_dataset(self._hf_name, split="validation").to_pandas()
+        self._raw_data = load_dataset(self._hf_name, split="test").to_pandas()
         if not isinstance(self._raw_data, pd.DataFrame):
             raise TypeError("Downloaded dataset is not a pandas DataFrame")
 
@@ -64,64 +64,32 @@ class RawDataPreprocessor(AbstractRawDataPreprocessor):
         Returns:
             dict: dataset key properties.
         """
-        if "text" in self._raw_data.columns:
-            series = self._raw_data["text"].dropna().astype(str)
-        elif "translation" in self._raw_data.columns:
-            series = self._raw_data["translation"].map(
-                lambda t: t.get("ru") if isinstance(t, dict) else None
-            ).dropna().astype(str)
-        elif {"ru", "es"}.issubset(self._raw_data.columns):
-            series = self._raw_data["ru"].dropna().astype(str)
-        else:
-            series = pd.Series(dtype=str)
-
-        lengths = series.str.len()
-
+        df = self._raw_data.copy()
+        df = df.dropna()
+        df = df.drop_duplicates()
+        source_data = df["ru"].dropna()
+        lengths = [len(str(text)) for text in source_data]
         return {
             "dataset_number_of_samples": len(self._raw_data),
             "dataset_columns": len(self._raw_data.columns),
             "dataset_duplicates": self._raw_data.duplicated().sum(),
-            "dataset_empty_rows": self._raw_data.isnull().all(axis=1).sum(),
-            "dataset_sample_min_len": int(lengths.min()) if not lengths.empty else 0,
-            "dataset_sample_max_len": int(lengths.max()) if not lengths.empty else 0,
+            "dataset_empty_rows": self._raw_data.isna().any(axis=1).sum(),
+            "dataset_sample_min_len": min(lengths),
+            "dataset_sample_max_len": max(lengths),
         }
+         
 
     @report_time
     def transform(self) -> None:
         """
         Apply preprocessing transformations to the raw dataset.
         """
-        if "translation" in self._raw_data.columns:
-            col = self._raw_data["translation"]
-            data = pd.DataFrame(
-                {
-                    ColumnNames.SOURCE.value: col.map(
-                        lambda t: t.get("ru") if isinstance(t, dict) else None
-                    ),
-                    ColumnNames.TARGET.value: col.map(
-                        lambda t: t.get("es") if isinstance(t, dict) else None
-                    ),
-                }
-            )
-        elif {"ru", "es"}.issubset(self._raw_data.columns):
-            data = pd.DataFrame(
-                {
-                    ColumnNames.SOURCE.value: self._raw_data["ru"].astype(str),
-                    ColumnNames.TARGET.value: self._raw_data["es"].astype(str),
-                }
-            )
-        else:
-            data = self._raw_data.rename(
-                columns={
-                    "text": ColumnNames.SOURCE.value,
-                    "labels": ColumnNames.TARGET.value,
-                }
-            )
-
-        self._data = data.dropna(subset=[ColumnNames.SOURCE.value, ColumnNames.TARGET.value]).reset_index(
-            drop=True
-        )
-
+        self._data = self._raw_data
+        self._data = self._data.drop(columns=["de", "en", "fr", "it", "nl", "pl"])
+        self._data = self._data.rename(columns={"ru": ColumnNames.SOURCE, "es": ColumnNames.TARGET})
+        self._data = self._data.dropna()
+        self._data = self._data.drop_duplicates()
+        self._data = self._data.reset_index(drop=True)
 
 class TaskDataset(Dataset):
     """
@@ -156,11 +124,7 @@ class TaskDataset(Dataset):
         Returns:
             tuple[str, ...]: The item to be received
         """
-        row = self._data.iloc[index]
-        return (
-            row[ColumnNames.SOURCE.value],
-            row[ColumnNames.TARGET.value],
-        )
+        return self._data.iloc[index][ColumnNames.SOURCE], self._data.iloc[index][ColumnNames.TARGET]
 
     @property
     def data(self) -> DataFrame:
@@ -257,38 +221,20 @@ class LLMPipeline(AbstractLLMPipeline):
         Returns:
             dict: Properties of a model
         """
-        assert self._model is not None
-        assert isinstance(self._model, torch.nn.Module)
         config = self._model.config
-
-        trainable_params = sum(p.numel() for p in self._model.parameters() if p.requires_grad)
-        total_params = sum(p.numel() for p in self._model.parameters())
-
-        max_context_length = int(
-            getattr(
-                config,
-                "max_position_embeddings",
-                getattr(config, "max_length", self._max_length),
-            )
-        )
-        vocab_size = int(getattr(config, "vocab_size", 0))
-        embedding_size = int(
-            getattr(
-                config,
-                "d_model",
-                getattr(config, "hidden_size", max_context_length),
-            )
-        )
+        ids = torch.ones(1, config.max_position_embeddings, dtype=torch.long)
+        tokens = {"input_ids": ids, "decoder_input_ids": ids}
+        result = summary(self._model, input_data=tokens, device="cpu", verbose=0)
 
         return {
-            "input_shape": [1, max_context_length],
-            "embedding_size": embedding_size,
-            "output_shape": [1, max_context_length, vocab_size],
-            "num_trainable_params": int(trainable_params),
-            "vocab_size": vocab_size,
-            "size": int(total_params * 4),
-            "max_context_length": max_context_length,
-        }
+            "input_shape": [1, config.max_position_embeddings],
+            "embedding_size": int(config.max_position_embeddings),
+            "output_shape": result.summary_list[-1].output_size,
+            "num_trainable_params": int(result.trainable_params),
+            "vocab_size": int(config.vocab_size),
+            "size": int(result.total_param_bytes),
+            "max_context_length": int(config.max_length),
+            }
 
     @report_time
     def infer_sample(self, sample: tuple[str, ...]) -> str | None:
