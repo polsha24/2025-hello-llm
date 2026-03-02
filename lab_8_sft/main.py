@@ -22,6 +22,8 @@ from core_utils.llm.sft_pipeline import AbstractSFTPipeline
 from core_utils.llm.task_evaluator import AbstractTaskEvaluator
 from core_utils.llm.time_decorator import report_time
 from core_utils.project.lab_settings import SFTParams
+from peft import LoraConfig
+
 
 try:
     from transformers import AutoConfig, AutoModelForSeq2SeqLM, AutoTokenizer
