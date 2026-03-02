@@ -6,17 +6,17 @@
     },
     "Helsinki-NLP/opus-mt-en-fr": {
         "enimai/MuST-C-fr": {
-            "bleu": 0.44745
+            "bleu": 0.45484
         }
     },
     "Helsinki-NLP/opus-mt-ru-en": {
         "shreevigneshs/iwslt-2023-en-ru-train-val-split-0.2": {
-            "bleu": 0.33392
+            "bleu": 0.33289
         }
     },
     "Helsinki-NLP/opus-mt-ru-es": {
         "nuvocare/Ted2020_en_es_fr_de_it_ca_pl_ru_nl": {
-            "bleu": 0.24078
+            "bleu": 0.23925
         }
     },
     "IlyaGusev/rubertconv_toxic_clf": {
@@ -29,21 +29,21 @@
     },
     "MoritzLaurer/DeBERTa-v3-base-mnli-fever-anli": {
         "mnli": {
-            "accuracy": 0.90099
+            "accuracy": 0.90000
         }
     },
     "UrukHan/t5-russian-summarization": {
         "CarlBrendt/Summ_Dialog_News": {
-            "bleu": 0.02510,
-            "rouge": 0.09224
+            "bleu": 0.02591,
+            "rouge": 0.08310
         },
         "IlyaGusev/gazeta": {
-            "bleu": 0.03825,
-            "rouge": 0.11964
+            "bleu": 0.03871,
+            "rouge": 0.13445
         },
         "d0rj/curation-corpus-ru": {
-            "bleu": 0.03781,
-            "rouge": 0.18235
+            "bleu": 0.03516,
+            "rouge": 0.18828
         }
     },
     "XSY/albert-base-v2-imdb-calssification": {
@@ -66,15 +66,15 @@
     },
     "cointegrated/rubert-base-cased-nli-threeway": {
         "cointegrated/nli-rus-translated-v2021": {
-            "accuracy": 0.77227
+            "accuracy": 0.78000
         },
         "xnli": {
-            "accuracy": 0.32673
+            "accuracy": 0.53000
         }
     },
     "cointegrated/rubert-tiny-bilingual-nli": {
         "terra": {
-            "accuracy": 0.42574
+            "accuracy": 0.41999
         }
     },
     "cointegrated/rubert-tiny-toxicity": {
@@ -84,7 +84,7 @@
     },
     "cointegrated/rubert-tiny2-cedr-emotion-detection": {
         "seara/ru_go_emotions": {
-            "f1": 0.56000
+            "f1": 0.54000
         }
     },
     "dslim/distilbert-NER": {
@@ -99,45 +99,45 @@
     },
     "google-t5/t5-small": {
         "RocioUrquijo/en_de": {
-            "bleu": 0.25283
+            "bleu": 0.24974
         }
     },
     "mrm8488/bert-mini2bert-mini-finetuned-cnn_daily_mail-summarization": {
         "ccdv/govreport-summarization": {
             "bleu": 0.00031,
-            "rouge": 0.10532
+            "rouge": 0.10537
         },
         "ccdv/pubmed-summarization": {
-            "bleu": 0.01916,
-            "rouge": 0.14658
+            "bleu": 0.01927,
+            "rouge": 0.14709
         }
     },
     "mrm8488/bert-small2bert-small-finetuned-cnn_daily_mail-summarization": {
         "ccdv/govreport-summarization": {
-            "bleu": 0.00080,
-            "rouge": 0.11167
+            "bleu": 0.00082,
+            "rouge": 0.11141
         },
         "ccdv/pubmed-summarization": {
-            "bleu": 0.03342,
-            "rouge": 0.17142
+            "bleu": 0.03737,
+            "rouge": 0.17747
         },
         "cnn_dailymail": {
-            "bleu": 0.05196,
-            "rouge": 0.22783
+            "bleu": 0.05757,
+            "rouge": 0.21911
         }
     },
     "nandakishormpai/t5-small-machine-articles-tag-generation": {
         "ccdv/govreport-summarization": {
-            "bleu": 0.00008,
-            "rouge": 0.07698
+            "bleu": 0.00000,
+            "rouge": 0.02891
         },
         "ccdv/pubmed-summarization": {
-            "bleu": 0.00874,
-            "rouge": 0.12982
+            "bleu": 0.00049,
+            "rouge": 0.07855
         },
         "cnn_dailymail": {
-            "bleu": 0.07535,
-            "rouge": 0.20748
+            "bleu": 0.06624,
+            "rouge": 0.17867
         }
     },
     "s-nlp/russian_toxicity_classifier": {
@@ -148,12 +148,12 @@
             "f1": 0.77000
         },
         "s-nlp/ru_paradetox_toxicity": {
-            "f1": 0.82999
+            "f1": 0.73999
         }
     },
     "tatiana-merz/turkic-cyrillic-classifier": {
         "tatiana-merz/cyrillic_turkic_langs": {
-            "f1": 0.96999
+            "f1": 1.00000
         }
     }
 }

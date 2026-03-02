@@ -5,6 +5,10 @@
         }
     },
     "EleutherAI/gpt-neo-125m": {
+        "domenicrosati/TruthfulQA": {
+            "bleu": 0.00937,
+            "rouge": 0.05331
+        },
         "jtatman/databricks-dolly-8k-qa-open-close": {
             "bleu": 0.02232,
             "rouge": 0.10704
@@ -16,13 +20,13 @@
         "tatsu-lab/alpaca": {
             "bleu": 0.01784,
             "rouge": 0.10346
-        },
-        "truthful_qa": {
-            "bleu": 0.00937,
-            "rouge": 0.05331
         }
     },
     "EleutherAI/pythia-160m-deduped": {
+        "domenicrosati/TruthfulQA": {
+            "bleu": 0.00685,
+            "rouge": 0.04704
+        },
         "jtatman/databricks-dolly-8k-qa-open-close": {
             "bleu": 0.02376,
             "rouge": 0.10681
@@ -34,10 +38,6 @@
         "tatsu-lab/alpaca": {
             "bleu": 0.01726,
             "rouge": 0.10478
-        },
-        "truthful_qa": {
-            "bleu": 0.00685,
-            "rouge": 0.04704
         }
     },
     "Helsinki-NLP/opus-mt-en-fr": {
@@ -64,6 +64,10 @@
         }
     },
     "JackFram/llama-68m": {
+        "domenicrosati/TruthfulQA": {
+            "bleu": 0.00650,
+            "rouge": 0.05480
+        },
         "jtatman/databricks-dolly-8k-qa-open-close": {
             "bleu": 0.01741,
             "rouge": 0.08982
@@ -75,10 +79,6 @@
         "tatsu-lab/alpaca": {
             "bleu": 0.01191,
             "rouge": 0.08936
-        },
-        "truthful_qa": {
-            "bleu": 0.00650,
-            "rouge": 0.05480
         }
     },
     "MoritzLaurer/DeBERTa-v3-base-mnli-fever-anli": {
@@ -251,38 +251,6 @@
     "tatiana-merz/turkic-cyrillic-classifier": {
         "tatiana-merz/cyrillic_turkic_langs": {
             "f1": 0.98999
-        }
-    },
-    "test_Helsinki-NLP/opus-mt-en-fr": {
-        "enimai/MuST-C-fr": {
-            "bleu": 0.44680
-        }
-    },
-    "test_JackFram/llama-68m": {
-        "tatsu-lab/alpaca": {
-            "bleu": 0.00000,
-            "rouge": 0.09024
-        }
-    },
-    "test_VMware/electra-small-mrqa": {
-        "starmpcc/Asclepius-Synthetic-Clinical-Notes": {
-            "squad": 1.68774
-        }
-    },
-    "test_aiknowyou/it-emotion-analyzer": {
-        "dair-ai/emotion": {
-            "f1": 0.29999
-        }
-    },
-    "test_cointegrated/rubert-base-cased-nli-threeway": {
-        "cointegrated/nli-rus-translated-v2021": {
-            "accuracy": 0.80000
-        }
-    },
-    "test_mrm8488/bert-mini2bert-mini-finetuned-cnn_daily_mail-summarization": {
-        "cnn_dailymail": {
-            "bleu": 0.04108,
-            "rouge": 0.23686
         }
     },
     "timpal0l/mdeberta-v3-base-squad2": {
